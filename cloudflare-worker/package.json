@@ -1,0 +1,7 @@
+{
+  "name": "cloudflare-auto-approver-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-Cost Serverless Telegram Auto Join Acceptor on Cloudflare Workers",
+  "main": "worker.js"
+}

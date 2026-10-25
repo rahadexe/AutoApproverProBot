@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>AutoApprover Pro: Telegram Join Request Engine</title>
+  <meta name="description" content="Autonomous join request approvals and human verification for Telegram channels and supergroups. Built on Bot API 8.0.">
+  <meta name="theme-color" content="#151618">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #151618;
+      --surface: #1e2024;
+      --surface-raised: #282a30;
+      --surface-subtle: #191b1e;
+      --ink: #f3f4f6;
+      --muted: #9ca3af;
+      --dim: #9ca3af;
+      --accent: #0072b2;
+      --accent-hover: #0084cc;
+      --success: #34d399;
+      --success-bg: #064e3b;
+      --warning: #fbbf24;
+      --warning-bg: #78350f;
+
+      --font-main: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+
+      --step-display: clamp(2.4rem, 1.4rem + 3.2vw, 3.8rem);
+      --step-head: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+      --step-lead: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);
+      --step-body: 16px;
+      --step-small: 14px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 80px;
+      scrollbar-width: none;
+    }
+    body::-webkit-scrollbar {
+      display: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-main);
+      font-size: var(--step-body);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .container {
+      width: min(1140px, calc(100% - 48px));
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Motion layer entrances */
+    @keyframes enterUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    nav {
+      animation: enterUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .hero-content h1,
+    .hero-content p,
+    .hero-actions {
+      animation: enterUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .stage-wrapper {
+      animation: enterUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+
+    .queue-row {
+      animation: enterUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .pillar-item {
+      animation: enterUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .calc-container {
+      animation: enterUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    details.faq-item {
+      animation: enterUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .launch-inner {
+      animation: enterUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      nav,
+      .hero-content h1,
+      .hero-content p,
+      .hero-actions,
+      .stage-wrapper,
+      .queue-row,
+      .pillar-item,
+      .calc-container,
+      details.faq-item,
+      .launch-inner {
+        animation: none;
+      }
+    }
+
+    /* Navigation */
+    nav {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg);
+      z-index: 100;
+      padding: 18px 0;
+    }
+
+    .nav-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: var(--step-lead);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background-color: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: var(--step-small);
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .btn-solid {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 48px;
+      padding: 0 24px;
+      background-color: var(--accent);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: var(--step-body);
+      border-radius: 6px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .btn-solid:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-quiet {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 48px;
+      padding: 0 20px;
+      background-color: var(--surface);
+      color: var(--ink);
+      font-weight: 600;
+      font-size: var(--step-body);
+      border-radius: 6px;
+      text-decoration: none;
+    }
+
+    .btn-quiet:hover {
+      background-color: var(--surface-raised);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 64px 0 56px 0;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (min-width: 960px) {
+      .hero-grid {
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 48px;
+      }
+    }
+
+    .hero-content h1 {
+      font-size: var(--step-display);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+    }
+
+    .hero-lead {
+      font-size: var(--step-lead);
+      color: var(--ink);
+      line-height: 1.5;
+      margin-bottom: 32px;
+      max-width: 54ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Interactive Telegram Workstation */
+    [data-ui="telegram-stage"] {
+      background-color: var(--surface);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    [data-ui="telegram-stage"] .stage-header {
+      background-color: var(--surface-subtle);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    [data-ui="telegram-stage"] .stage-title {
+      font-size: var(--step-small);
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    [data-ui="telegram-stage"] .stage-toggles {
+      display: flex;
+      gap: 4px;
+      background-color: var(--bg);
+      padding: 3px;
+      border-radius: 6px;
+    }
+
+    [data-ui="telegram-stage"] .toggle-btn {
+      padding: 6px 14px;
+      font-size: var(--step-small);
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    [data-ui="telegram-stage"] .toggle-btn.active {
+      background-color: var(--surface-raised);
+      color: var(--ink);
+    }
+
+    /* Mobile tabs for workstation */
+    [data-ui="telegram-stage"] .mobile-stage-tabs {
+      display: flex;
+      background-color: var(--surface-subtle);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    @media (min-width: 860px) {
+      [data-ui="telegram-stage"] .mobile-stage-tabs {
+        display: none;
+      }
+    }
+
+    [data-ui="telegram-stage"] .stage-tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: var(--step-small);
+      font-weight: 600;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    [data-ui="telegram-stage"] .stage-tab.active {
+      background-color: var(--surface);
+      color: var(--ink);
+    }
+
+    [data-ui="telegram-stage"] .stage-body {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 860px) {
+      [data-ui="telegram-stage"] .stage-body {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* Queue Pane */
+    [data-ui="telegram-stage"] .queue-pane {
+      background-color: var(--surface);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    [data-ui="telegram-stage"] .queue-pane-title {
+      font-size: var(--step-small);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    [data-ui="telegram-stage"] .queue-row {
+      background-color: var(--surface-raised);
+      padding: 12px 14px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    [data-ui="telegram-stage"] .queue-user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    [data-ui="telegram-stage"] .queue-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: var(--surface-subtle);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--step-small);
+      font-weight: 700;
+    }
+
+    [data-ui="telegram-stage"] .queue-name {
+      font-size: var(--step-small);
+      font-weight: 600;
+    }
+
+    [data-ui="telegram-stage"] .queue-handle {
+      font-size: var(--step-small);
+      color: var(--muted);
+    }
+
+    [data-ui="telegram-stage"] .badge-pending {
+      font-size: var(--step-small);
+      font-weight: 600;
+      color: var(--warning);
+      background-color: var(--warning-bg);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    [data-ui="telegram-stage"] .badge-approved {
+      font-size: var(--step-small);
+      font-weight: 600;
+      color: var(--success);
+      background-color: var(--success-bg);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* Chat Pane */
+    [data-ui="telegram-stage"] .chat-pane {
+      background-color: var(--surface-subtle);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 280px;
+    }
+
+    [data-ui="telegram-stage"] .chat-bubble {
+      background-color: var(--surface);
+      padding: 14px;
+      border-radius: 8px;
+      font-size: var(--step-small);
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    [data-ui="telegram-stage"] .chat-bubble-btn {
+      width: 100%;
+      height: 48px;
+      background-color: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: var(--step-small);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    [data-ui="telegram-stage"] .chat-bubble-btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    [data-ui="telegram-stage"] .chat-bubble-btn.done {
+      background-color: var(--success-bg);
+      color: var(--success);
+      cursor: default;
+    }
+
+    /* Technical Pillars Section */
+    .section-pillars {
+      position: relative;
+      z-index: 10;
+      padding: 96px 0;
+    }
+
+    .section-header {
+      margin-bottom: 48px;
+      max-width: 58ch;
+    }
+
+    .section-header h2 {
+      font-size: var(--step-head);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      text-wrap: balance;
+    }
+
+    .section-header p {
+      color: var(--ink);
+      font-size: var(--step-lead);
+      max-width: 58ch;
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 768px) {
+      .pillars-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .pillar-item {
+      background-color: var(--surface);
+      padding: 28px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pillar-photo {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 6px;
+      background-color: var(--surface-subtle);
+    }
+
+    .pillar-item h3 {
+      font-size: var(--step-lead);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .pillar-item p {
+      color: var(--ink);
+      font-size: var(--step-body);
+      line-height: 1.6;
+      max-width: 58ch;
+    }
+
+    /* Calculator Section */
+    .section-calc {
+      position: relative;
+      z-index: 10;
+      padding: 80px 0;
+      background-color: var(--surface-subtle);
+    }
+
+    .calc-container {
+      background-color: var(--surface);
+      border-radius: 12px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (min-width: 860px) {
+      .calc-container {
+        grid-template-columns: 1.2fr 1fr;
+        padding: 44px;
+      }
+    }
+
+    .calc-title {
+      font-size: var(--step-head);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .calc-desc {
+      color: var(--ink);
+      font-size: var(--step-body);
+      margin-bottom: 24px;
+      max-width: 58ch;
+    }
+
+    .calc-slider-box {
+      margin-top: 16px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .slider-val {
+      font-size: var(--step-lead);
+      font-weight: 700;
+      color: #38bdf8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 8px;
+      background-color: var(--surface-raised);
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .calc-stats-card {
+      background-color: var(--surface-subtle);
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .calc-label {
+      font-size: var(--step-small);
+      color: var(--muted);
+    }
+
+    .calc-metric {
+      font-size: var(--step-head);
+      font-weight: 700;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* FAQ Section */
+    .section-faq {
+      position: relative;
+      z-index: 10;
+      padding: 96px 0;
+    }
+
+    .faq-search-box {
+      margin-bottom: 24px;
+    }
+
+    .faq-search-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      background-color: var(--surface);
+      color: var(--ink);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--step-body);
+      font-family: inherit;
+      outline: none;
+    }
+
+    .faq-search-input:focus {
+      background-color: var(--surface-raised);
+    }
+
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    details.faq-item {
+      background-color: var(--surface);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    details.faq-item[open] {
+      background-color: var(--surface-raised);
+    }
+
+    summary.faq-q {
+      padding: 18px 20px;
+      font-size: var(--step-body);
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    summary.faq-q::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-a {
+      padding: 0 20px 20px 20px;
+      color: var(--ink);
+      font-size: var(--step-body);
+      line-height: 1.6;
+      max-width: 58ch;
+    }
+
+    /* Final CTA */
+    .section-launch {
+      position: relative;
+      z-index: 10;
+      padding: 80px 0;
+      background-color: var(--surface-subtle);
+      text-align: center;
+    }
+
+    .launch-inner {
+      max-width: 58ch;
+      margin: 0 auto;
+    }
+
+    .launch-inner h2 {
+      font-size: var(--step-head);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 14px;
+      letter-spacing: -0.03em;
+    }
+
+    .launch-inner p {
+      color: var(--ink);
+      font-size: var(--step-lead);
+      margin-bottom: 32px;
+      max-width: 58ch;
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 10;
+      padding: 40px 0;
+      font-size: var(--step-small);
+      color: var(--muted);
+    }
+
+    .footer-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links a {
+      color: var(--ink);
+      text-decoration: none;
+      margin-left: 20px;
+    }
+
+    .credits {
+      margin-top: 16px;
+      font-size: var(--step-small);
+      color: var(--muted);
+      max-width: 68ch;
+    }
+
+    .credits a {
+      color: var(--ink);
+    }
+
+    /* Mobile Responsive Tweaks */
+    @media (max-width: 859px) {
+      .nav-links {
+        display: none;
+      }
+      .hero {
+        padding: 40px 0 36px 0;
+      }
+      .hero-actions .btn-solid,
+      .hero-actions .btn-quiet {
+        width: 100%;
+      }
+      .calc-container {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="container nav-flex">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </div>
+        <span>AutoApprover Pro</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#simulator">Simulator</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#calculator">Calculator</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+
+      <a href="https://t.me/AutoApproverProBot?startchannel&admin=invite_users+manage_chat" target="_blank" rel="noopener noreferrer" class="btn-solid">
+        Connect to Telegram
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <h1>Telegram approvals.</h1>
+        <p class="hero-lead">
+          Admit genuine subscribers in 40 milliseconds or filter scraper networks with direct message verification.
+        </p>
+        <div class="hero-actions">
+          <a href="https://t.me/AutoApproverProBot?startchannel&admin=invite_users+manage_chat" target="_blank" rel="noopener noreferrer" class="btn-solid">
+            Add to Channel
+          </a>
+          <a href="https://t.me/AutoApproverProBot?startgroup&admin=invite_users+manage_chat" target="_blank" rel="noopener noreferrer" class="btn-quiet">
+            Add to Supergroup
+          </a>
+        </div>
+      </div>
+
+      <!-- Live Interactive Workstation -->
+      <div class="stage-wrapper" id="simulator" data-ui="telegram-stage">
+        <div class="stage-header">
+          <span class="stage-title">Live Gatekeeper Preview</span>
+          <div class="stage-toggles">
+            <button class="toggle-btn active" id="btnModeCaptcha" onclick="switchMode('captcha')">Captcha Gate</button>
+            <button class="toggle-btn" id="btnModeInstant" onclick="switchMode('instant')">Instant 40ms</button>
+          </div>
+        </div>
+
+        <div class="mobile-stage-tabs">
+          <button class="stage-tab active" id="tabQueue" onclick="switchMobileTab('queue')">Incoming Queue</button>
+          <button class="stage-tab" id="tabChat" onclick="switchMobileTab('chat')">Member Message</button>
+        </div>
+
+        <div class="stage-body">
+          <!-- Queue Column -->
+          <div class="queue-pane" id="paneQueue">
+            <div class="queue-pane-title">Subscribers Waiting</div>
+
+            <div class="queue-row">
+              <div class="queue-user-info">
+                <div class="queue-avatar">JD</div>
+                <div>
+                  <div class="queue-name">Alex Vance</div>
+                  <div class="queue-handle">@alex_quant</div>
+                </div>
+              </div>
+              <span class="badge-pending" id="queueStatus">Pending</span>
+            </div>
+
+            <div class="queue-row">
+              <div class="queue-user-info">
+                <div class="queue-avatar">ST</div>
+                <div>
+                  <div class="queue-name">Sarah Trade</div>
+                  <div class="queue-handle">@sarah_crypto</div>
+                </div>
+              </div>
+              <span class="badge-approved">Approved (38ms)</span>
+            </div>
+
+            <div class="queue-row">
+              <div class="queue-user-info">
+                <div class="queue-avatar">MR</div>
+                <div>
+                  <div class="queue-name">Max Reed</div>
+                  <div class="queue-handle">@max_reed</div>
+                </div>
+              </div>
+              <span class="badge-approved">Approved (41ms)</span>
+            </div>
+          </div>
+
+          <!-- Chat Column -->
+          <div class="chat-pane" id="paneChat">
+            <div class="chat-bubble" id="chatContent">
+              <div>Hello Alex. To complete your request to join VIP Signals, confirm below:</div>
+              <button class="chat-bubble-btn" id="simBtn" onclick="runSimVerify(this)">
+                Confirm: I am not a robot
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Capabilities -->
+  <section class="section-pillars" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <h2>Four engineering guarantees.</h2>
+        <p>Built directly on Telegram Bot API 8.0 without userbots or scrapers.</p>
+      </div>
+
+      <div class="pillars-grid">
+        <div class="pillar-item">
+          <video class="pillar-photo" autoplay muted loop playsinline preload="metadata" poster="assets/openvibe-aquisition-server-hello-world-poster.jpg" width="1280" height="720" aria-hidden="true">
+            <source src="assets/openvibe-aquisition-server-hello-world.webm" type="video/webm">
+          </video>
+          <h3>Sub-40ms edge execution</h3>
+          <p>
+            When a visitor submits a join request, Telegram dispatches a webhook. AutoApprover processes the payload and returns approval in under 40 milliseconds.
+          </p>
+        </div>
+
+        <div class="pillar-item">
+          <img class="pillar-photo" src="assets/cisco-catalyst-6509.jpg" width="1024" height="768" alt="High throughput switch array" loading="lazy">
+          <h3>DM captcha verification</h3>
+          <p>
+            Scrapers and automated user accounts are held in pending queue until they interact with an inline verification button inside their private bot chat.
+          </p>
+        </div>
+
+        <div class="pillar-item">
+          <img class="pillar-photo" src="assets/20180927-rd-lsc-0933.jpg" width="1024" height="683" alt="Persistent server storage arrays" loading="lazy">
+          <h3>Permanent member ledger</h3>
+          <p>
+            Every user ID, handle, and join timestamp is saved to an internal SQLite ledger. Channel admins can export subscriber data or dispatch announcements.
+          </p>
+        </div>
+
+        <div class="pillar-item">
+          <img class="pillar-photo" src="assets/telecommunications-technician.jpg" width="1920" height="1280" alt="Certified infrastructure engineer inspecting data center" loading="lazy">
+          <h3>Zero account ban risk</h3>
+          <p>
+            The engine operates exclusively through Telegram's official approveChatJoinRequest method. No account credentials or MTProto session files required.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculator Section -->
+  <section class="section-calc" id="calculator">
+    <div class="container">
+      <div class="calc-container">
+        <div>
+          <div class="calc-title">Quantify manual workload</div>
+          <p class="calc-desc">
+            Manually reviewing join requests leads to subscriber drop-off. Adjust your estimated daily volume:
+          </p>
+
+          <div class="calc-slider-box">
+            <div class="slider-header">
+              <span style="font-size: var(--step-body); font-weight: 600;">Daily Join Requests</span>
+              <span class="slider-val" id="sliderLabel">300 / day</span>
+            </div>
+            <input type="range" id="dailySlider" min="20" max="4000" step="20" value="300" oninput="updateCalculator(this.value)">
+          </div>
+        </div>
+
+        <div class="calc-stats-card">
+          <div class="calc-row">
+            <span class="calc-label">Admin hours saved monthly</span>
+            <span class="calc-metric" id="metricHours">25 hrs</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Scraper bots filtered</span>
+            <span class="calc-metric" id="metricBots">1,620</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">New leads saved to database</span>
+            <span class="calc-metric" id="metricLeads">9,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filterable FAQ -->
+  <section class="section-faq" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <h2>Frequently asked questions</h2>
+        <p>Type to filter common questions and implementation details.</p>
+      </div>
+
+      <div class="faq-search-box">
+        <input type="text" id="faqInput" class="faq-search-input" placeholder="Search questions (e.g. free, ban, limits, dm)..." oninput="filterFaq(this.value)">
+      </div>
+
+      <div class="faq-list" id="faqItems">
+        <details class="faq-item" open>
+          <summary class="faq-q">
+            <span>Is AutoApprover Pro completely free?</span>
+            <span>+</span>
+          </summary>
+          <div class="faq-a">
+            Yes. The engine runs on serverless architecture with minimal resource overhead. You can connect your channels and approve unlimited join requests without subscriptions.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            <span>Can Telegram restrict my channel for using this?</span>
+            <span>+</span>
+          </summary>
+          <div class="faq-a">
+            No. The engine operates entirely through Telegram's official Bot API endpoint (approveChatJoinRequest). It adheres to rate limits and violates no platform rules.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            <span>How does the bot message users with private DM settings?</span>
+            <span>+</span>
+          </summary>
+          <div class="faq-a">
+            When a user requests to join an admin-approval link, Telegram temporarily opens an authorized communication window allowing the channel's bot administrator to send verification prompts.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            <span>What is the difference between Captcha Gate and Instant Mode?</span>
+            <span>+</span>
+          </summary>
+          <div class="faq-a">
+            Captcha Gate asks users to tap a verification button in DM before admitting them to the group. Instant Mode admits applicants in approximately 40 milliseconds without any button tap.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            <span>Does it work on supergroups as well as broadcast channels?</span>
+            <span>+</span>
+          </summary>
+          <div class="faq-a">
+            Yes. Both broadcast channels and supergroups with join request links are fully supported.
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final Launch Banner -->
+  <section class="section-launch">
+    <div class="container launch-inner">
+      <h2>Ready to automate your channel?</h2>
+      <p>Add the bot, turn on admin approval on your invite link, and let the engine run.</p>
+      <a href="https://t.me/AutoApproverProBot?startchannel&admin=invite_users+manage_chat" target="_blank" rel="noopener noreferrer" class="btn-solid">
+        Launch @AutoApproverProBot
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-flex">
+      <div>AutoApprover Pro by RH Tools</div>
+      <div class="footer-links">
+        <a href="https://t.me/AutoApproverProBot" target="_blank" rel="noopener noreferrer">@AutoApproverProBot</a>
+      </div>
+    </div>
+    <div class="container">
+      <p class="credits">Pictures and footage: <a href="https://www.flickr.com/photos/41284017@N08/45105755611">“20180927-RD-LSC-1190”</a> by USDAgov, <a href="https://creativecommons.org/publicdomain/mark/1.0/">public domain</a>, via Flickr; <a href="https://www.flickr.com/photos/63578371@N00/2779518206">“Cisco Catalyst 6509”</a> by DaveHabben, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>, via Flickr; <a href="https://www.flickr.com/photos/41284017@N08/45105758331">“20180927-RD-LSC-0933”</a> by USDAgov, <a href="https://creativecommons.org/publicdomain/mark/1.0/">public domain</a>, via Flickr; <a href="https://commons.wikimedia.org/wiki/File:Telecommunications_technician.jpg">“Telecommunications technician”</a> by U.S. Department of Agriculture, <a href="https://creativecommons.org/publicdomain/mark/1.0/">public domain</a>, via Wikimedia Commons; <a href="https://commons.wikimedia.org/wiki/File:OpenViBE_Aquisition_Server_hello_world.webm">“OpenViBE Aquisition Server hello world”</a> by Brylie Oxley, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>, via Wikimedia Commons.</p>
+    </div>
+  </footer>
+
+  <!-- Logic & Interactions -->
+  <script>
+    let currentMode = 'captcha';
+
+    function renderStage() {
+      const chat = document.getElementById('chatContent');
+      const queueTag = document.getElementById('queueStatus');
+
+      if (currentMode === 'captcha') {
+        queueTag.className = 'badge-pending';
+        queueTag.innerText = 'Pending';
+        chat.innerHTML = `
+          <div>Hello Alex. To complete your request to join VIP Signals, confirm below:</div>
+          <button class="chat-bubble-btn" id="simBtn" onclick="runSimVerify(this)">
+            Confirm: I am not a robot
+          </button>
+        `;
+      } else {
+        queueTag.className = 'badge-approved';
+        queueTag.innerText = 'Approved (40ms)';
+        chat.innerHTML = `
+          <div style="color: var(--success); font-weight: 600; margin-bottom: 4px;">Instant 40ms Approval</div>
+          <div>Your join request has been approved automatically. Welcome to the group!</div>
+        `;
+      }
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnModeCaptcha').classList.toggle('active', mode === 'captcha');
+      document.getElementById('btnModeInstant').classList.toggle('active', mode === 'instant');
+      renderStage();
+    }
+
+    function switchMobileTab(tab) {
+      document.getElementById('tabQueue').classList.toggle('active', tab === 'queue');
+      document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
+
+      if (window.innerWidth < 860) {
+        document.getElementById('paneQueue').style.display = tab === 'queue' ? 'flex' : 'none';
+        document.getElementById('paneChat').style.display = tab === 'chat' ? 'flex' : 'none';
+      }
+    }
+
+    function runSimVerify(btn) {
+      if (btn.classList.contains('done')) return;
+      btn.innerText = 'Verifying token...';
+      setTimeout(() => {
+        btn.classList.add('done');
+        btn.innerText = 'Verified! Request Approved';
+
+        const queueTag = document.getElementById('queueStatus');
+        if (queueTag) {
+          queueTag.className = 'badge-approved';
+          queueTag.innerText = 'Approved (38ms)';
+        }
+
+        const chat = document.getElementById('chatContent');
+        const confirmation = document.createElement('div');
+        confirmation.style.marginTop = '10px';
+        confirmation.style.color = 'var(--success)';
+        confirmation.style.fontWeight = '600';
+        confirmation.innerText = 'Access Granted: You have been admitted to VIP Signals.';
+        chat.appendChild(confirmation);
+      }, 350);
+    }
+
+    function updateCalculator(val) {
+      const daily = parseInt(val, 10);
+      document.getElementById('sliderLabel').innerText = daily.toLocaleString() + ' / day';
+
+      const monthly = daily * 30;
+      const hours = Math.round((monthly * 10) / 3600);
+      const bots = Math.round(monthly * 0.18);
+
+      document.getElementById('metricHours').innerText = hours.toLocaleString() + ' hrs';
+      document.getElementById('metricBots').innerText = bots.toLocaleString();
+      document.getElementById('metricLeads').innerText = monthly.toLocaleString();
+    }
+
+    function filterFaq(query) {
+      const q = query.toLowerCase().trim();
+      const items = document.querySelectorAll('.faq-item');
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? 'block' : 'none';
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 860) {
+        document.getElementById('paneQueue').style.display = 'flex';
+        document.getElementById('paneChat').style.display = 'flex';
+      } else {
+        const isQueueActive = document.getElementById('tabQueue').classList.contains('active');
+        switchMobileTab(isQueueActive ? 'queue' : 'chat');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStage();
+      if (window.innerWidth < 860) {
+        switchMobileTab('queue');
+      }
+    });
+  </script>
+</body>
+</html>
